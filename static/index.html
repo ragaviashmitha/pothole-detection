@@ -1,49 +1,54 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Pothole Detection</title>
-    <link rel="stylesheet" href="/static/styles.css" />
-  </head>
-  <body>
-    <header class="app-header">
-      <h1>POTHOLE DETECTION CONSOLE</h1>
-    </header>
 
-    <main class="app-shell">
-      <section class="hero">
-        <div>
-          <p class="intro">
-            Review road surface images, run automated pothole detection, and confirm inspection results from one workspace
-          </p>
-        </div>
-        <div class="status" id="status">Ready</div>
-      </section>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pothole Detection</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
 
-      <section class="workspace">
-        <div class="controls">
-          <label class="upload-button">
-            <input id="imageInput" type="file" accept="image/*" />
-            Upload Image
-          </label>
-          <button id="startCamera" type="button">Start Webcam</button>
-          <button id="captureFrame" type="button" disabled>Detect Webcam Frame</button>
-        </div>
+<body>
+  <header class="app-header">
+    <h1>POTHOLE DETECTION CONSOLE</h1>
+  </header>
 
-        <div class="stage">
-          <video id="video" autoplay playsinline muted hidden></video>
-          <canvas id="canvas"></canvas>
-          <div class="empty-state" id="emptyState">Choose an image or start the webcam</div>
-        </div>
+  <main class="app-shell">
+    <section class="hero">
+      <div>
+        <p class="intro">
+          Review road surface images, run automated pothole detection, and confirm inspection results from one workspace
+        </p>
+      </div>
+      <div class="status" id="status">Ready</div>
+    </section>
 
-        <div class="results">
-          <h2>Detections</h2>
-          <p id="summary">No scan yet</p>
-        </div>
-      </section>
-    </main>
+    <section class="workspace">
+      <div class="controls">
+        <label class="upload-button">
+          <input id="imageInput" type="file" accept="image/*" />
+          Upload Image
+        </label>
+        <button id="startCamera" type="button">Start Webcam</button>
+        <button id="captureFrame" type="button" disabled>Detect Webcam Frame</button>
+      </div>
 
-    <script src="/static/app.js"></script>
-  </body>
+      <div class="stage">
+        <video id="video" autoplay playsinline muted hidden></video>
+        <canvas id="canvas"></canvas>
+        <canvas id="overlayCanvas" hidden></canvas>
+        <div class="empty-state" id="emptyState">Choose an image or start the webcam</div>
+      </div>
+
+      <div class="results">
+        <div id="diagnosticMessage" class="diagnostic-message" hidden></div>
+        <h2>Detections</h2>
+        <p id="summary">No scan yet</p>
+      </div>
+    </section>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+
 </html>
