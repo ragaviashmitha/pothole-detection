@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pothole Detection</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg: #ffffff;
+            --surface: #f8fafc;
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --text: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.5;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .app-header {
+            padding: 1rem;
+            background: var(--bg);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 20px;
+            color: var(--text);
+            text-align: center;
+        }
+
+        .app-shell {
+            flex: 1;
+            padding: 1.5rem;
+            max-width: 800px;
+            margin: 0 auto;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .workspace {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stage {
+            flex: 1;
+            background: #f1f5f9;
+            position: relative;
+            min-height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        video,
+        canvas {
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        video:not([hidden]),
+        canvas:not([hidden]) {
+            display: block;
+        }
+
+        #overlayCanvas {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+
+        .empty-state {
+            position: absolute;
+            text-align: center;
+            color: var(--text-muted);
+            z-index: 10;
+        }
+
+        .controls {
+            padding: 1.25rem;
+            background: var(--bg);
+            border-top: 1px solid var(--border);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            justify-content: center;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.625rem 1rem;
+            font-weight: 600;
+            font-size: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: var(--primary-hover);
+        }
+
+        .btn-outline {
+            background: white;
+            border-color: var(--border);
+            color: var(--text);
+        }
+
+        .btn-outline:hover:not(:disabled) {
+            background: var(--surface);
+        }
+
+        .btn-danger {
+            background: #fee2e2;
+            color: #b91c1c;
+            border-color: #fecaca;
+        }
+
+        .btn-danger:hover:not(:disabled) {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .sidebar {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+
+        @media (max-width: 640px) {
+            .sidebar {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .panel {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1rem;
+        }
+
+        .panel-header {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.25rem 0.625rem;
+            background: #f0f9ff;
+            color: #0369a1;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            border: 1px solid #bae6fd;
+        }
+
+        .status-pulse {
+            width: 6px;
+            height: 6px;
+            background: #0ea5e9;
+            border-radius: 50%;
+        }
+
+        .diagnostic-message {
+            color: #b91c1c;
+            font-size: 0.75rem;
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+            background: #fef2f2;
+            border-radius: 6px;
+        }
+
+        .visually-hidden {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            border: 0;
+        }
+    </style>
+</head>
+
+<body>
+    <header class="app-header">
+        <div class="logo">
+            <h1>Pothole Detection</h1>
+        </div>
+    </header>
+
+    <main class="app-shell">
+        <section class="workspace">
+            <div class="stage">
+                <video id="video" autoplay playsinline muted hidden></video>
+                <canvas id="canvas" hidden></canvas>
+                <canvas id="overlayCanvas" hidden></canvas>
+                <div class="empty-state" id="emptyState">
+                    <p>No active feed. Upload an image or start camera.</p>
+                </div>
+            </div>
+
+            <div class="controls">
+                <label class="btn btn-primary" id="uploadLabel">
+                    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+                        stroke-width="1.5">
+                        <path d="M8 14V2M3 7l5-5 5 5" />
+                    </svg>
+                    Upload Image
+                    <input type="file" id="imageInput" accept="image/*" class="visually-hidden">
+                </label>
+                <button class="btn btn-outline" id="startCamera">
+                    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+                        stroke-width="1.5">
+                        <rect x="1" y="4" width="14" height="8" />
+                        <circle cx="8" cy="8" r="2" />
+                    </svg>
+                    Start Camera
+                </button>
+                <button class="btn btn-outline" id="liveDetect" disabled>
+                    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+                        stroke-width="1.5">
+                        <polygon points="5,3 13,8 5,13" />
+                    </svg>
+                    Live Scan
+                </button>
+                <button class="btn btn-outline" id="captureFrame" disabled>
+                    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+                        stroke-width="1.5">
+                        <circle cx="8" cy="8" r="5" />
+                        <circle cx="8" cy="8" r="1" />
+                    </svg>
+                    Snap
+                </button>
+                <button class="btn btn-danger" id="stopLiveDetect" disabled>
+                    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+                        stroke-width="1.5">
+                        <rect x="4" y="4" width="8" height="8" />
+                    </svg>
+                    Stop
+                </button>
+            </div>
+        </section>
+
+        <aside class="sidebar">
+            <div class="panel">
+                <div class="panel-header">Detection Results</div>
+                <div id="diagnosticMessage" class="diagnostic-message" hidden></div>
+                <div id="summary" style="font-size: 0.875rem; color: var(--text-muted);">Awaiting scan...</div>
+            </div>
+        </aside>
+    </main>
+
+    <script>
+        // --- CONFIGURATION ---
+        const ROBOFLOW_API_KEY = "3596itnzUTPKpjxMixhL";
+        const MODEL_ID = "pothole-detection-bqu6s/9";
+        // ---------------------
+
+        const imageInput = document.querySelector("#imageInput");
+        const liveDetectButton = document.querySelector("#liveDetect");
+        const startCameraButton = document.querySelector("#startCamera");
+        const captureFrameButton = document.querySelector("#captureFrame");
+        const stopLiveDetectButton = document.querySelector("#stopLiveDetect");
+        const video = document.querySelector("#video");
+        const canvas = document.querySelector("#canvas");
+        const overlayCanvas = document.querySelector("#overlayCanvas");
+        const emptyState = document.querySelector("#emptyState");
+        const statusText = document.querySelector("#statusText");
+        const summary = document.querySelector("#summary");
+        const diagnosticMessage = document.querySelector("#diagnosticMessage");
+
+        const ctx = canvas.getContext("2d");
+        const overlayCtx = overlayCanvas.getContext("2d");
+
+        const LIVE_INTERVAL = 600;
+        const VIEW_STATE = { IDLE: "idle", BUSY: "busy", LIVE: "live", READY: "ready" };
+
+        let cameraStream = null;
+        let isScanning = false;
+        let liveTimer = null;
+        let currentViewState = VIEW_STATE.IDLE;
+        const processingCanvas = document.createElement("canvas");
+        const processingCtx = processingCanvas.getContext("2d");
+
+        function setStatus(text) { if (statusText) statusText.textContent = text; }
+
+        function updateUI() {
+            const isLive = currentViewState === VIEW_STATE.LIVE;
+            const isCamera = !!cameraStream;
+            const isBusy = isScanning;
+            const isImage = !isCamera && canvas.width > 0;
+
+            imageInput.disabled = isBusy;
+            startCameraButton.disabled = isBusy || isCamera;
+            liveDetectButton.disabled = isBusy || !isCamera || isLive;
+            captureFrameButton.disabled = isBusy || !isCamera || isLive;
+            stopLiveDetectButton.disabled = !isCamera && !isLive;
+
+            if (isCamera) {
+                emptyState.hidden = true;
+                video.hidden = false;
+                canvas.hidden = true;
+            } else if (isImage) {
+                emptyState.hidden = true;
+                video.hidden = true;
+                canvas.hidden = false;
+            } else {
+                emptyState.hidden = false;
+                video.hidden = true;
+                canvas.hidden = true;
+            }
+        }
+
+        async function detect(blob) {
+            if (!ROBOFLOW_API_KEY) throw new Error("API Key missing.");
+            if (isScanning) return [];
+            try {
+                isScanning = true; updateUI();
+                const base64 = await new Promise((res) => {
+                    const r = new FileReader();
+                    r.onloadend = () => res(r.result.split(',')[1]);
+                    r.readAsDataURL(blob);
+                });
+                const url = `https://detect.roboflow.com/${MODEL_ID}?api_key=${ROBOFLOW_API_KEY}`;
+                const resp = await fetch(url, { method: 'POST', body: base64, headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
+                if (!resp.ok) throw new Error(`API Error: ${resp.status}`);
+                const data = await resp.json();
+                return data.predictions || [];
+            } finally { isScanning = false; updateUI(); }
+        }
+
+        function draw(targetCtx, predictions, transform) {
+            predictions.forEach(p => {
+                const x = (p.x - p.width / 2) * transform.sx;
+                const y = (p.y - p.height / 2) * transform.sy;
+                const w = p.width * transform.sx;
+                const h = p.height * transform.sy;
+                targetCtx.strokeStyle = "#2563eb"; targetCtx.lineWidth = 2;
+                targetCtx.strokeRect(x, y, w, h);
+                targetCtx.fillStyle = "#2563eb"; targetCtx.font = "bold 10px Inter";
+                targetCtx.fillText(`${p.class} ${Math.round(p.confidence * 100)}%`, x, y - 5);
+            });
+        }
+
+        async function start() {
+            try {
+                setStatus("Starting...");
+                cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: 1280, height: 720 } });
+                video.srcObject = cameraStream; await video.play();
+                currentViewState = VIEW_STATE.READY; setStatus("Camera Active"); updateUI();
+            } catch (err) { setStatus("Error"); diagnosticMessage.textContent = err.message; diagnosticMessage.hidden = false; }
+        }
+
+        function stop() {
+            if (cameraStream) cameraStream.getTracks().forEach(t => t.stop());
+            cameraStream = null; if (liveTimer) clearTimeout(liveTimer); liveTimer = null;
+            video.hidden = true; canvas.hidden = true; overlayCanvas.hidden = true;
+            canvas.width = 0; canvas.height = 0; // Reset canvas
+            currentViewState = VIEW_STATE.IDLE; setStatus("Ready"); updateUI();
+        }
+
+        async function runLive() {
+            if (currentViewState !== VIEW_STATE.LIVE) return;
+            try {
+                processingCanvas.width = video.videoWidth; processingCanvas.height = video.videoHeight;
+                processingCtx.drawImage(video, 0, 0);
+                const blob = await new Promise(r => processingCanvas.toBlob(r, 'image/jpeg', 0.7));
+                const preds = await detect(blob);
+                overlayCanvas.width = video.clientWidth; overlayCanvas.height = video.clientHeight;
+                overlayCanvas.hidden = false;
+                draw(overlayCtx, preds, { sx: video.clientWidth / video.videoWidth, sy: video.clientHeight / video.videoHeight });
+                summary.textContent = `Detected: ${preds.length}`;
+            } catch (err) { console.error(err); }
+            liveTimer = setTimeout(runLive, LIVE_INTERVAL);
+        }
+
+        imageInput.addEventListener("change", async (e) => {
+            const file = e.target.files[0]; if (!file) return;
+            stop(); setStatus("Scanning...");
+            try {
+                const img = new Image(); img.src = URL.createObjectURL(file);
+                await img.decode();
+                const s = Math.min(canvas.parentNode.clientWidth / img.width, 400 / img.height, 1);
+                canvas.width = img.width * s; canvas.height = img.height * s;
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                updateUI(); // Ensure canvas is shown immediately
+
+                const preds = await detect(file);
+                draw(ctx, preds, { sx: s, sy: s });
+                summary.textContent = `Found ${preds.length} pothole(s).`; setStatus("Done");
+                updateUI();
+            } catch (err) { setStatus("Error"); }
+        });
+
+        startCameraButton.addEventListener("click", start);
+        liveDetectButton.addEventListener("click", () => { currentViewState = VIEW_STATE.LIVE; setStatus("Live"); updateUI(); runLive(); });
+        stopLiveDetectButton.addEventListener("click", stop);
+        captureFrameButton.addEventListener("click", async () => {
+            setStatus("Snapping...");
+            processingCanvas.width = video.videoWidth; processingCanvas.height = video.videoHeight;
+            processingCtx.drawImage(video, 0, 0);
+            const blob = await new Promise(r => processingCanvas.toBlob(r, 'image/jpeg', 0.9));
+
+            stop(); // Stop camera to display the static frame on canvas
+
+            const img = new Image(); img.src = URL.createObjectURL(blob);
+            await img.decode();
+            const s = Math.min(canvas.parentNode.clientWidth / img.width, 400 / img.height, 1);
+            canvas.width = img.width * s; canvas.height = img.height * s;
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            updateUI(); // Display the static frame immediately
+
+            const preds = await detect(blob);
+            draw(ctx, preds, { sx: s, sy: s });
+            summary.textContent = `Found ${preds.length} pothole(s).`;
+            setStatus("Snapshot Done"); updateUI();
+        });
+        updateUI();
+    </script>
+</body>
+
+</html>
